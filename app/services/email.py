@@ -6,6 +6,7 @@ import markdown as md_lib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from app.stats_tracker import tracker
 
 load_dotenv()
 
@@ -116,6 +117,7 @@ def generate_email_digest(hours: int = 24, top_n: int = 10):
         logger.warning(f"No digests found from the last {hours} hours")
         raise ValueError("No digests available")
 
+    tracker.record_articles_evaluated(len(digests))
     logger.info(f"Ranking {len(digests)} digests for email generation")
     ranked_articles = curator.rank_digests(digests)
     if not ranked_articles:

@@ -1,10 +1,12 @@
 import logging
+import requests
 from typing import Optional
 
 from app.scrapers.anthropic import AnthropicScraper
 from app.scrapers.youtube import YouTubeScraper
 from app.agent.digest_agent import DigestAgent
 from app.database.repository import Repository
+from app.stats_tracker import tracker
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +19,14 @@ def process_anthropic_markdown() -> dict:
     articles = repo.get_anthropic_articles_without_markdown()
     processed = failed = 0
     for article in articles:
+        try:
+            raw_html_len = len(requests.get(article.url, timeout=10).text)
+        except Exception:
+            raw_html_len = 0
+
         markdown = scraper.url_to_markdown(article.url)
         if markdown:
+            tracker.record_compression(raw_html_len, len(markdown))
             repo.update_anthropic_article_markdown(article.guid, markdown)
             processed += 1
         else:

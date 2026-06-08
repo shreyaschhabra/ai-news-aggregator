@@ -2,7 +2,8 @@ import os
 import time
 from typing import Optional
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
+from app.stats_tracker import tracker
 
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 _MODEL = "gemini-3.1-flash-lite"
@@ -36,6 +37,7 @@ class DigestAgent:
             'Return a JSON object with exactly: {"title": "...", "summary": "..."}'
         )
         try:
+            tracker.record_api_call()
             time.sleep(_RATE_LIMIT_SLEEP)
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -43,7 +45,12 @@ class DigestAgent:
                 temperature=0.7,
                 response_format={"type": "json_object"},
             )
-            return DigestOutput.model_validate_json(response.choices[0].message.content)
+            result = DigestOutput.model_validate_json(response.choices[0].message.content)
+            tracker.record_validation_success()
+            return result
+        except ValidationError:
+            tracker.record_validation_failure()
+            return None
         except Exception as e:
             print(f"Error generating digest: {e}")
             return None

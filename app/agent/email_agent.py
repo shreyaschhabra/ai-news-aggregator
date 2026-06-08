@@ -3,7 +3,8 @@ import time
 from datetime import datetime
 from typing import List, Optional
 from openai import OpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
+from app.stats_tracker import tracker
 
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 _MODEL = "gemini-3.1-flash-lite"
@@ -82,6 +83,7 @@ class EmailAgent:
         )
 
         try:
+            tracker.record_api_call()
             time.sleep(_RATE_LIMIT_SLEEP)
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -90,9 +92,13 @@ class EmailAgent:
                 response_format={"type": "json_object"},
             )
             intro = EmailIntroduction.model_validate_json(response.choices[0].message.content)
+            tracker.record_validation_success()
             if not intro.greeting.startswith(f"Hey {self.user_profile['name']}"):
                 intro.greeting = f"Hey {self.user_profile['name']}, here is your daily digest of AI news for {current_date}."
             return intro
+        except ValidationError:
+            tracker.record_validation_failure()
+            return self._fallback_intro(current_date)
         except Exception as e:
             print(f"Error generating introduction: {e}")
             return self._fallback_intro(current_date)

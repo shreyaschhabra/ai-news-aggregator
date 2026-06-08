@@ -2,7 +2,8 @@ import os
 import time
 from typing import List
 from openai import OpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
+from app.stats_tracker import tracker
 
 _GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 _MODEL = "gemini-3.1-flash-lite"
@@ -79,6 +80,7 @@ Preferences:
         )
 
         try:
+            tracker.record_api_call()
             time.sleep(_RATE_LIMIT_SLEEP)
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -87,7 +89,11 @@ Preferences:
                 response_format={"type": "json_object"},
             )
             ranked_list = RankedDigestList.model_validate_json(response.choices[0].message.content)
+            tracker.record_validation_success()
             return ranked_list.articles if ranked_list else []
+        except ValidationError:
+            tracker.record_validation_failure()
+            return []
         except Exception as e:
             print(f"Error ranking digests: {e}")
             return []

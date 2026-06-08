@@ -11,6 +11,7 @@ from app.scrapers.anthropic import AnthropicScraper
 from app.database.repository import Repository
 from app.services.pipeline import process_anthropic_markdown, process_youtube_transcripts, process_digests
 from app.services.email import send_digest_email
+from app.stats_tracker import tracker
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ def run_daily_pipeline(hours: int = 24, top_n: int = 10) -> dict:
     logger.info("Starting Daily AI News Aggregator Pipeline")
     logger.info("=" * 60)
 
+    tracker.reset()
     results = {"start_time": start_time.isoformat(), "scraping": {}, "processing": {}, "digests": {}, "email": {}, "success": False}
 
     try:
@@ -98,4 +100,5 @@ def run_daily_pipeline(hours: int = 24, top_n: int = 10) -> dict:
     logger.info(f"Done in {duration:.1f}s | Email: {'Sent' if results['success'] else 'Failed'}")
     logger.info("=" * 60)
 
+    tracker.print_summary()
     return results
