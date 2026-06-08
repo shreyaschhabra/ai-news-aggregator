@@ -1,7 +1,9 @@
+import os
+
 YOUTUBE_CHANNELS = ["UCawZsQWqfGSbCI5yjkdVkTA"]  # Matthew Berman
 
 USER_PROFILE = {
-    "name": "Shreyas",
+    "name": os.getenv("RECIPIENT_NAME", "Shreyas"),
     "title": "AI Student",
     "background": "AI engineer student with deep interest in practical AI applications, research breakthroughs, and production-ready systems",
     "interests": [

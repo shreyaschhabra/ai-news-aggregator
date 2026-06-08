@@ -12,6 +12,7 @@ load_dotenv()
 
 MY_EMAIL = os.getenv("MY_EMAIL")
 APP_PASSWORD = os.getenv("APP_PASSWORD")
+RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL") or MY_EMAIL
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +153,7 @@ def send_digest_email(hours: int = 24, top_n: int = 10) -> dict:
         result = generate_email_digest(hours=hours, top_n=top_n)
         greeting = result.introduction.greeting
         subject = f"Daily AI News Digest - {greeting.split('for ')[-1] if 'for ' in greeting else 'Today'}"
-        send_email(subject=subject, body_text=result.to_markdown(), body_html=digest_to_html(result))
+        send_email(subject=subject, body_text=result.to_markdown(), body_html=digest_to_html(result), recipients=[RECIPIENT_EMAIL])
         logger.info("Email sent successfully!")
         return {"success": True, "subject": subject, "articles_count": len(result.articles)}
     except ValueError as e:

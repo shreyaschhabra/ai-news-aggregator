@@ -53,6 +53,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          RECIPIENT_NAME: ${{ secrets.RECIPIENT_NAME }}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: "5432"
           POSTGRES_USER: postgres
