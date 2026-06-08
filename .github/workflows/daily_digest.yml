@@ -1,0 +1,61 @@
+name: Daily AI News Digest
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # Every day at 8 AM UTC
+  workflow_dispatch:        # Allow manual runs from GitHub UI
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  run-digest:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_news_aggregator
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+
+      - name: Install dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Create database tables
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_news_aggregator
+        run: uv run python -m app.database.connection
+
+      - name: Run daily pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_news_aggregator
+        run: uv run python main.py 120 10
